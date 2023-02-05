@@ -3,6 +3,7 @@ import boto3
 from config import my_session, glacier_conf
 from botocore.exceptions import ClientError
 import os
+import json
 
 glacier_client = my_session.client('glacier')
 
@@ -78,3 +79,13 @@ class VaultWrapper:
         )
         print(job)
         return job
+    
+    def get_inventory(self,jobId):
+        """ Takes in a *completed* inventory job and returns the list of jobs as JSON"""
+        job = self.client.get_job_output(vaultName=self.vaultName,jobId=jobId)
+        try:
+            as_json = json.loads(job['body'].read())
+            return as_json
+        except:
+            print(job)
+            raise Exception("Could not get inventory from job ID: %s Is it a completed inventory job?" % (jobId))
