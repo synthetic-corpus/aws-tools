@@ -8,10 +8,11 @@ glacier_client = my_session.client('glacier')
 
 class VaultWrapper:
     """ Does basic Upload and Read functionality for particular Vault """
-    def __init__(self,client,vaultName):
+    def __init__(self,client,vaultName,returnBucket):
         """ The Vault name and the Glacier Connection from above """
-        self.client = client
-        self.vaultName = vaultName
+        self.client = client # an glacier client
+        self.vaultName = vaultName # the specific vault to be used
+        self.returnBucket = returnBucket # the s3 Bucket where retrieval jobs are sent
 
     def upload_archive(self,archiveDescription,filePath):
         """ Uploads a single file """
@@ -30,3 +31,32 @@ class VaultWrapper:
         archives =  self.client.describe_vault(vaultName=self.vaultName)
         print(archives)
         return archives
+
+    def get_archive(self,archiveId,description):
+        """ Starts a job to put an Archive into a bucket """
+        job_params = {
+            'ArchiveId': archiveId,
+            'Description': description,
+            'Type': 'archive-retrieval',
+
+            'OutputLocation': {
+                'BucketName': self.returnBucket,
+            }
+        }
+        job = self.client.initiate_job(
+            vaultName = self.vaultName,
+            jobParameters=job_params
+        )
+        print(job)
+        return job
+    
+    def list_jobs(self,status='InProgress'):
+        if status not in ['InProgress','Succeeded','Failed']:
+            raise Exception("Status must be one of 'InProgress', 'Succeeded', or 'Failed'")
+        else:
+            jobs = self.client.list_jobs(
+                vaultName=self.vaultName,
+                statuscode = status
+            )
+            print(jobs)
+            return jobs

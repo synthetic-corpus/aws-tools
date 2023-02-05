@@ -12,7 +12,8 @@ this_config = Config(
 )
 
 glacier_conf = {
-    'vaultName': 'patreon-art' #name of vault that is to be used
+    'vaultName': '', #name of vault that is to be used
+    'returnBucket': '' #name of the Bucket that Vault retrievals are sent to.
 }
 
 session = boto3.Session(profile_name='') # Put the name of the ~/.aws profile to be used here
