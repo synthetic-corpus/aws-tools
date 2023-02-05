@@ -13,7 +13,7 @@ class VaultWrapper:
         self.client = client # an glacier client
         self.vaultName = vaultName # the specific vault to be used
         self.returnBucket = returnBucket # the s3 Bucket where retrieval jobs are sent
-
+    
     def upload_archive(self,archiveDescription,filePath):
         """ Uploads a single file """
         data = open(filePath,'rb')
@@ -38,9 +38,8 @@ class VaultWrapper:
             'ArchiveId': archiveId,
             'Description': description,
             'Type': 'archive-retrieval',
-
             'OutputLocation': {
-                'BucketName': self.returnBucket,
+                'BucketName': returnBucket,
             }
         }
         job = self.client.initiate_job(
@@ -60,3 +59,22 @@ class VaultWrapper:
             )
             print(jobs)
             return jobs
+
+    def get_inventory(self,startDate,endDate):
+        """ Takes in dates in YYYY-MM-DD format and get the inventory for that time """
+        formatStart = '%sT00:00:00Z' % (startDate)
+        formateEnd = '%sT23:59:59Z' % (endDate)
+        job_params = {
+            'Type': 'inventory-retrieval',
+            'Format': 'JSON',
+            'InventoryRetrievalParameters': {
+                'StartDate': formatStart,
+                'EndDate': formateEnd,
+            },
+        }
+        job = self.client.initiate_job(
+            vaultName = self.vaultName,
+            jobParameters=job_params
+        )
+        print(job)
+        return job
