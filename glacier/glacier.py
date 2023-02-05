@@ -15,13 +15,18 @@ class VaultWrapper:
 
     def upload_archive(self,archiveDescription,filePath):
         """ Uploads a single file """
-        file = open(filePath,'rb')
+        data = open(filePath,'rb')
         try:
-            new_achrive = self.client.upload_archive(self.vaultName,archiveDescription,file)
-            print("Upload %s. New Achrive Id: %s to {self.vaultName}" % (archiveDescription, new_achrive.id))
+            new_archive = self.client.upload_archive(vaultName=self.vaultName,archiveDescription=archiveDescription,body=data)
+            print("Upload %s. New Achrive Id: %s to %s" % (archiveDescription, new_archive['archiveId'], self.vaultName))
+            return new_archive
         except ClientError:
-            print("Failed to complete upload to {slef.vaultName}")
+            print("Failed to complete upload to {self.vaultName}")
             print(ClientError)
             raise
-        else:
-            return new_achrive
+
+    def describe_vault(self):
+        """ Returns the vault details. """
+        archives =  self.client.describe_vault(vaultName=self.vaultName)
+        print(archives)
+        return archives
