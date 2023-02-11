@@ -38,10 +38,7 @@ class VaultWrapper:
         job_params = {
             'ArchiveId': archiveId,
             'Description': description,
-            'Type': 'archive-retrieval',
-            'OutputLocation': {
-                'BucketName': returnBucket,
-            }
+            'Type': 'archive-retrieval'
         }
         job = self.client.initiate_job(
             vaultName = self.vaultName,
@@ -80,7 +77,7 @@ class VaultWrapper:
         print(job)
         return job
     
-    def get_inventory(self,jobId):
+    def get_inventory_result(self,jobId):
         """ Takes in a *completed* inventory job and returns the list of jobs as JSON"""
         job = self.client.get_job_output(vaultName=self.vaultName,jobId=jobId)
         try:
