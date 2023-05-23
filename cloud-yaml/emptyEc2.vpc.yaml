@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: "2010-09-09"
+#
+# Creates VPC and a front end EC2 instance and 
+# a backend EC2 instance.
+#
+# Backend EC2 instance has an attached drive.
+# Subnets allow fronted end to connect to the internet, and backend.
+# Backend is isolated on its own subnet.
+#
+#
+#
+#
+Resources:
+  # VPC and Subnet Section
+  DeployedVPC:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.8.0.0/16'
+      Tags:
+        - Key: Type
+          Value: Cloud-testing
+  PublicSubnet:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref DeployedVPC
+      CidrBlock: '10.8.0.0/24'
+      Tags:
+        - Key: Type
+          Value: Cloud-testing
+  PrivateSubnet:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref DeployedVPC
+      CidrBlock: '10.8.1.0/24'
+      Tags:
+        - Key: Type
+          Value: Cloud-testing
+  # Routing Tables, no Routes Needed yet.
+  MainRoutingTable:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::RouteTable'
+    #DependsOn: !Ref DeployedVPC
+    Properties: 
+      VpcId: !Ref DeployedVPC
+  # Attach Subnets to Routing Table
+  PrivateRoutes:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref MainRoutingTable
+      SubnetId: !Ref PublicSubnet
+  # Security Group
+  InstanceSecurityGroup:
+    DeletionPolicy: Delete
+    DependsOn: DeployedVPC
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Web Traffic
+      VpcId: !Ref DeployedVPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+  # NACL and Rules
+  HearInternalNACL:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::NetworkAcl'
+    DependsOn: PrivateSubnet
+    Properties: 
+      VpcId: !Ref DeployedVPC
+  HearInternalRule:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::NetworkAclEntry
+    # DependsOn: HearInternalNACL
+    Properties:
+      NetworkAclId: !Ref HearInternalNACL
+      CidrBlock: '10.8.0.0/24'
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+  HearExternalNACL:
+    DeletionPolicy: Delete
+    Type: 'AWS::EC2::NetworkAcl'
+    DependsOn: PublicSubnet
+    Properties: 
+      VpcId: !Ref DeployedVPC
+  HearExternalRule80:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::NetworkAclEntry
+    # DependsOn: !Ref HearExternalNACL
+    Properties:
+      NetworkAclId: HearExternalNACL
+      CidrBlock: '0.0.0.0/0'
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+      RuleNumber: 100
+  HearExternalRule443:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::NetworkAclEntry
+    # DependsOn: !Ref HearExternalNACL
+    Properties:
+      NetworkAclId: HearExternalNACL
+      CidrBlock: '0.0.0.0/0'
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 80
+      RuleAction: allow
+      RuleNumber: 105
+  HearThePrivateNetwork:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::NetworkAclEntry
+    # DependsOn: !Ref HearExternalNACL
+    Properties:
+      NetworkAclId: HearExternalNACL
+      CidrBlock: '10.8.1.0/24'
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 400
+  # Attach Subnets to NACLs
+  PrivateNetworkAssc:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DeletionPolicy: Delete
+    # DependsOn: !Ref HearInternalNACL
+    Properties: 
+      NetworkAclId: !Ref HearInternalNACL
+      SubnetId: !Ref PrivateSubnet
+  PublicNetworkAssc:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DeletionPolicy: Delete
+    # DependsOn: !Ref HearExternalNACL
+    Properties: 
+      NetworkAclId: !Ref HearExternalNACL
+      SubnetId: !Ref PublicSubnet
+  EC2A:
+    # Hypothetical 'web server'
+    DeletionPolicy: Delete
+    # DependsOn: !Ref PublicSubnet
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0ceecbb0f30a902a6
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - SubnetId: !Ref PublicSubnet
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8227abab-1c0c-4779-b82d-d3fb1f782fc3
+  EC2B:
+    # Hypothetical 'backend'
+    DeletionPolicy: Delete
+    DependsOn: !Ref PrivateSubet
+    Type: 'AWS::EC2::Instance'
+    Properties:
+        ImageId: ami-0ceecbb0f30a902a6
+        InstanceType: t2.micro
+        NetworkInterfaces:
+          - SubnetId: !Ref PrivateSubnet
+        BlockDeviceMappings:
+        - DeviceName: "/dev/sdm"
+          Ebs:
+            VolumeType: 'io1'
+            Iops: 300
+            DeleteOnTermination: True
+            VolumeSize: "20"
