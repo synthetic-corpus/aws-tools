@@ -14,34 +14,34 @@ Resources:
   # VPC and Subnet Section
   DeployedVPC:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::VPC'
+    Type: "AWS::EC2::VPC"
     Properties:
-      CidrBlock: '10.8.0.0/16'
+      CidrBlock: "10.8.0.0/16"
       Tags:
         - Key: Type
           Value: Cloud-testing
   PublicSubnet:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref DeployedVPC
-      CidrBlock: '10.8.0.0/24'
+      CidrBlock: "10.8.0.0/24"
       Tags:
         - Key: Type
           Value: Cloud-testing
   PrivateSubnet:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref DeployedVPC
-      CidrBlock: '10.8.1.0/24'
+      CidrBlock: "10.8.1.0/24"
       Tags:
         - Key: Type
           Value: Cloud-testing
   # Routing Tables, no Routes Needed yet.
   MainRoutingTable:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::RouteTable'
+    Type: "AWS::EC2::RouteTable"
     #DependsOn: !Ref DeployedVPC
     Properties: 
       VpcId: !Ref DeployedVPC
@@ -55,7 +55,7 @@ Resources:
   # Security Group
   InstanceSecurityGroup:
     DeletionPolicy: Delete
-    DependsOn: DeployedVPC
+    # DependsOn: DeployedVPC
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow Web Traffic
@@ -72,7 +72,7 @@ Resources:
   # NACL and Rules
   HearInternalNACL:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::NetworkAcl'
+    Type: "AWS::EC2::NetworkAcl"
     DependsOn: PrivateSubnet
     Properties: 
       VpcId: !Ref DeployedVPC
@@ -82,23 +82,23 @@ Resources:
     # DependsOn: HearInternalNACL
     Properties:
       NetworkAclId: !Ref HearInternalNACL
-      CidrBlock: '10.8.0.0/24'
+      CidrBlock: "10.8.0.0/24"
       Protocol: -1
       RuleAction: allow
       RuleNumber: 100
   HearExternalNACL:
     DeletionPolicy: Delete
-    Type: 'AWS::EC2::NetworkAcl'
+    Type: "AWS::EC2::NetworkAcl"
     DependsOn: PublicSubnet
     Properties: 
       VpcId: !Ref DeployedVPC
   HearExternalRule80:
     DeletionPolicy: Delete
     Type: AWS::EC2::NetworkAclEntry
-    # DependsOn: !Ref HearExternalNACL
+    #DependsOn: HearExternalNACL
     Properties:
-      NetworkAclId: HearExternalNACL
-      CidrBlock: '0.0.0.0/0'
+      NetworkAclId: !Ref HearExternalNACL
+      CidrBlock: "0.0.0.0/0"
       Protocol: 6
       PortRange:
         From: 80
@@ -110,12 +110,12 @@ Resources:
     Type: AWS::EC2::NetworkAclEntry
     # DependsOn: !Ref HearExternalNACL
     Properties:
-      NetworkAclId: HearExternalNACL
-      CidrBlock: '0.0.0.0/0'
+      NetworkAclId: !Ref HearExternalNACL
+      CidrBlock: "0.0.0.0/0"
       Protocol: 6
       PortRange:
         From: 443
-        To: 80
+        To: 443
       RuleAction: allow
       RuleNumber: 105
   HearThePrivateNetwork:
@@ -123,8 +123,8 @@ Resources:
     Type: AWS::EC2::NetworkAclEntry
     # DependsOn: !Ref HearExternalNACL
     Properties:
-      NetworkAclId: HearExternalNACL
-      CidrBlock: '10.8.1.0/24'
+      NetworkAclId: !Ref HearExternalNACL
+      CidrBlock: "10.8.1.0/24"
       Protocol: -1
       RuleAction: allow
       RuleNumber: 400
@@ -144,32 +144,33 @@ Resources:
       NetworkAclId: !Ref HearExternalNACL
       SubnetId: !Ref PublicSubnet
   EC2A:
-    # Hypothetical 'web server'
+    # Hypothetical "web server"
     DeletionPolicy: Delete
     # DependsOn: !Ref PublicSubnet
-    Type: 'AWS::EC2::Instance'
+    Type: "AWS::EC2::Instance"
     Properties:
       ImageId: ami-0ceecbb0f30a902a6
-      InstanceType: t2.micro
+      InstanceType: t3.micro
       NetworkInterfaces:
         - SubnetId: !Ref PublicSubnet
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 8227abab-1c0c-4779-b82d-d3fb1f782fc3
+          DeviceIndex: 0
+          DeleteOnTermination: true
   EC2B:
-    # Hypothetical 'backend'
+    # Hypothetical "backend"
     DeletionPolicy: Delete
-    DependsOn: !Ref PrivateSubet
-    Type: 'AWS::EC2::Instance'
+    # DependsOn: !Ref PrivateSubet
+    Type: "AWS::EC2::Instance"
     Properties:
         ImageId: ami-0ceecbb0f30a902a6
-        InstanceType: t2.micro
+        InstanceType: t3.micro
         NetworkInterfaces:
           - SubnetId: !Ref PrivateSubnet
+            DeviceIndex: 0
+            DeleteOnTermination: true
         BlockDeviceMappings:
         - DeviceName: "/dev/sdm"
           Ebs:
-            VolumeType: 'io1'
+            VolumeType: "io1"
             Iops: 300
             DeleteOnTermination: True
             VolumeSize: "20"
