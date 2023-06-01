@@ -65,7 +65,7 @@ Resources:
           def lambda_handler(event, context):
               return {
                   'statusCode': 200,
-                  'body': json.dumps({'message': 'This is an Auth Request Reply'})
+                  'body': json.dumps({'message': 'This is an Auth Request Reply','data': event})
               }
 
       Handler: index.lambda_handler
@@ -91,12 +91,12 @@ Resources:
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
       ResourceId: !Ref AuthResource
-      HttpMethod: GET
+      HttpMethod: POST
       AuthorizationType: NONE
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthFunction.Arn}/invocations"
       MethodResponses:
         - StatusCode: 200
 
@@ -127,4 +127,4 @@ Outputs:
   WebsiteBucketName:
     Value: !Ref WebsiteBucket
   ApiGatewayEndpoint:
-    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/hello"
+    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
