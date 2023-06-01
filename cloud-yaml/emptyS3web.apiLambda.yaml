@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  WebsiteBucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  HelloWorldFunction:
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: Delete
+    Properties:
+      Code:
+        ZipFile: |
+          import json
+
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps({'message': 'Hello World'})
+              }
+
+      Handler: index.lambda_handler
+      Runtime: python3.8
+
+  ApiGatewayRestApi:
+    Type: "AWS::ApiGateway::RestApi"
+    DeletionPolicy: Delete
+    Properties:
+      Name: HelloWorldApi
+
+  ApiGatewayResource:
+    Type: "AWS::ApiGateway::Resource"
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: hello
+
+  ApiGatewayMethod:
+    Type: "AWS::ApiGateway::Method"
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ApiGatewayResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: 200
+
+Outputs:
+  WebsiteBucketName:
+    Value: !Ref WebsiteBucket
+  ApiGatewayEndpoint:
+    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/hello"
