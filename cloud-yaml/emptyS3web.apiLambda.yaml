@@ -9,10 +9,37 @@ Resources:
         IndexDocument: index.html
         ErrorDocument: error.html
 
+  LambdaExecutionRole: # does nothing but write to cloud trail
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Description: Lambdas can only talk to Cloud Trail. That's it.
+      Policies: 
+        - PolicyName: root
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "cloudtrail:StartLogging"
+                Resource:
+                  - "arn:aws:cloudtrail:*"
+      RoleName: LambdaExecutionRole
+
   HelloWorldFunction:
     Type: "AWS::Lambda::Function"
     DeletionPolicy: Delete
     Properties:
+      Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         ZipFile: |
           import json
@@ -26,13 +53,54 @@ Resources:
       Handler: index.lambda_handler
       Runtime: python3.8
 
+  AuthFunction:
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: Delete
+    Properties:
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps({'message': 'This is an Auth Request Reply'})
+              }
+
+      Handler: index.lambda_handler
+      Runtime: python3.8
+
   ApiGatewayRestApi:
     Type: "AWS::ApiGateway::RestApi"
     DeletionPolicy: Delete
     Properties:
       Name: HelloWorldApi
 
-  ApiGatewayResource:
+  AuthResource: # For Authentication if not Cognito
+    Type: "AWS::ApiGateway::Resource"
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: auth
+  
+  ApiGatewayAuthMethod:
+    Type: "AWS::ApiGateway::Method"
+    DeletionPolicy: Delete
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AuthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: 200
+
+  HelloResource: # For "Hello World"
     Type: "AWS::ApiGateway::Resource"
     DeletionPolicy: Delete
     Properties:
@@ -40,12 +108,12 @@ Resources:
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: hello
 
-  ApiGatewayMethod:
+  ApiGatewayHelloMethod:
     Type: "AWS::ApiGateway::Method"
     DeletionPolicy: Delete
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
-      ResourceId: !Ref ApiGatewayResource
+      ResourceId: !Ref HelloResource
       HttpMethod: GET
       AuthorizationType: NONE
       Integration:
