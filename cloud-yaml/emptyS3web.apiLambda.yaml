@@ -145,6 +145,23 @@ Resources:
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations"
       MethodResponses:
         - StatusCode: 200
+  
+  # Permission for API invoke Lambda
+  PermisionsForHello:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+        FunctionName: !Ref HelloWorldFunction
+        Action: lambda:InvokeFunction
+        Principal: "apigateway.amazonaws.com"
+        SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/*"
+   
+  PermisionsForAuth:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+        FunctionName: !Ref AuthFunction
+        Action: lambda:InvokeFunction
+        Principal: "apigateway.amazonaws.com"
+        SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/*"
 
 Outputs:
   WebsiteBucketName:
