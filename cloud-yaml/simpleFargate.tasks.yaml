@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: A set of fargate tasks
 Resources:
   FargateAuthTask:
-    
     Type: AWS::ECS::TaskDefinition
     Properties:
         Tags:
@@ -16,6 +15,30 @@ Resources:
         PidMode: task
         ContainerDefinitions:
          - Image: https://hub.docker.com/repository/docker/gonzaga626/auth:latest
+           Name: TestAuth
+           Environment:
+            - Name: API_PORT
+              Value: 80
+            - Name: TEST_VAR
+              Value: Test variable successfully added.
+           PortMappings:
+            - AppProtocol: http
+              ContainerPort: 80
+              HostPort: 80
+  FargateReflectTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+        Tags:
+          - Key: test
+            Value: True
+        NetworkMode: awsvpc
+        RequiresCompatibilities:
+             - FARGATE
+        Memory: 512
+        Cpu: 256
+        PidMode: task
+        ContainerDefinitions:
+         - Image: https://hub.docker.com/repository/docker/gonzaga626/reflect:latest
            Name: TestAuth
            Environment:
             - Name: API_PORT
