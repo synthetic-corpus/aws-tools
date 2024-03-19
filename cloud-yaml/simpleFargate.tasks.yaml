@@ -1,6 +1,76 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: A set of fargate tasks
+Parameters:
+  PublicSubnet:
+    Type: String
+    Default: Id of Public Subnet
+    Description: Enter the Public Subnet here
+  PrivateSubnet:
+    Type: String
+    Default: Iof the private Subnet
+    Description: enter the id of the Private Subnet here
+  RouteTable:
+    Type: String
+    Default: Id of Route Table
+    Description: The Route Table that routes may need to be added to.
+  SelectedVPC:
+    Type: String
+    Default: Id of VPC goes here
+    Description: The VPC to be deployed to. Will have security groups added to it.
 Resources:
+  # Subnets for the Default VPC
+  FargateSecurityGroup:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows Traffic from Public Subnet. Allows all outbound traffic
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref PublicSubnet
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref PublicSubnet
+      SecurityGroupEgress:
+           - IpProtocol: TCP
+             DestinationSecurityGroupId: !Ref PublicSubnet
+             FromPort: "-1"
+  FargateCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: Simple-Fargate
+      CapacityProviders:
+           - FARGATE
+  FargateAuthService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: Fargate-Auth-Service
+      Cluster: !Ref FargateCluster
+      LaunchType: FARGATE
+      TaskDefinition: !Ref FargateAuthTask
+      NetworkConfiguration:
+           AwsvpcConfiguration:
+              SecurityGroups:
+                   - !Ref FargateSecurityGroup
+              Subnets:
+                   - !Ref PrivateSubnet
+                
+  FargateReflectService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: Fargate-Auth-Service
+      Cluster: !Ref FargateCluster
+      LaunchType: FARGATE
+      TaskDefinition: !Ref FargateReflectTask
+      NetworkConfiguration:
+           AwsvpcConfiguration:
+              SecurityGroups:
+                   - !Ref FargateSecurityGroup
+              Subnets:
+                   - !Ref PrivateSubnet
   FargateAuthTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
