@@ -19,6 +19,26 @@ Parameters:
     Description: The VPC to be deployed to. Will have security groups added to it.
 Resources:
   # Subnets for the Default VPC
+  LoadSecurityGroup:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows all traffic too and from Load Balancer
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: "0.0.0.0/0"
+      SecurityGroupEgress:
+           - IpProtocol: TCP
+             CidrIp: "0.0.0.0/0"
+             FromPort: 0
+             ToPort: 1023
   FargateSecurityGroup:
     DeletionPolicy: Delete
     Type: AWS::EC2::SecurityGroup
@@ -29,15 +49,16 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !Ref PublicSubnet
+          SourceSecurityGroupId: !Ref LoadSecurityGroup
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          SourceSecurityGroupId: !Ref PublicSubnet
+          SourceSecurityGroupId: !Ref LoadSecurityGroup
       SecurityGroupEgress:
            - IpProtocol: TCP
-             DestinationSecurityGroupId: !Ref PublicSubnet
-             FromPort: "-1"
+             DestinationSecurityGroupId: !Ref LoadSecurityGroup
+             FromPort: 0
+             ToPort: 1023
   FargateCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -50,6 +71,7 @@ Resources:
       ServiceName: Fargate-Auth-Service
       Cluster: !Ref FargateCluster
       LaunchType: FARGATE
+      DesiredCount: 1
       TaskDefinition: !Ref FargateAuthTask
       NetworkConfiguration:
            AwsvpcConfiguration:
@@ -61,9 +83,10 @@ Resources:
   FargateReflectService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: Fargate-Auth-Service
+      ServiceName: Fargate-Reflect-Service
       Cluster: !Ref FargateCluster
       LaunchType: FARGATE
+      DesiredCount: 1
       TaskDefinition: !Ref FargateReflectTask
       NetworkConfiguration:
            AwsvpcConfiguration:
@@ -84,7 +107,7 @@ Resources:
         Cpu: 256
         PidMode: task
         ContainerDefinitions:
-         - Image: https://hub.docker.com/repository/docker/gonzaga626/auth:latest
+         - Image: hub.docker.com/repository/docker/gonzaga626/auth:latest
            Name: TestAuth
            Environment:
             - Name: API_PORT
@@ -108,7 +131,7 @@ Resources:
         Cpu: 256
         PidMode: task
         ContainerDefinitions:
-         - Image: https://hub.docker.com/repository/docker/gonzaga626/reflect:latest
+         - Image: hub.docker.com/repository/docker/gonzaga626/reflect:latest
            Name: TestAuth
            Environment:
             - Name: API_PORT
