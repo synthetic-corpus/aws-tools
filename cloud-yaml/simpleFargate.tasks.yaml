@@ -89,9 +89,9 @@ Resources:
       DesiredCount: 1
       TaskDefinition: !Ref FargateAuthTask
       LoadBalancers:
-          - ContainerName: FargateAuthService
+          - ContainerName: AuthTest
             ContainerPort: 80
-            TargetGroupArn: AuthTargetGroup
+            TargetGroupArn: !Ref AuthTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
               SecurityGroups:
@@ -108,9 +108,9 @@ Resources:
       DesiredCount: 1
       TaskDefinition: !Ref FargateReflectTask
       LoadBalancers:
-          - ContainerName: FargateReflectService
+          - ContainerName: ReflectTask
             ContainerPort: 80
-            TargetGroupArn: ReflectTargetGroup
+            TargetGroupArn: !Ref ReflectTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
               SecurityGroups:
@@ -131,7 +131,7 @@ Resources:
         PidMode: task
         ContainerDefinitions:
          - Image: docker.io/gonzaga626/auth:latest
-           Name: TestAuth
+           Name: AuthTest
            Environment:
             - Name: API_PORT
               Value: 80
@@ -189,4 +189,4 @@ Resources:
            - !Ref PublicSubnetB
       Name: Fargate-LoadBlalancer
       SecurityGroups:
-           - LoadSecurityGroup
+           - !Ref LoadSecurityGroup
