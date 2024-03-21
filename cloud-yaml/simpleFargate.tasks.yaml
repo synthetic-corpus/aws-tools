@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: A set of fargate tasks
 Parameters:
-  PublicSubnet:
+  PublicSubnetA:
     Type: String
     Default: Id of Public Subnet
     Description: Enter the Public Subnet here
@@ -9,6 +9,10 @@ Parameters:
     Type: String
     Default: Iof the private Subnet
     Description: enter the id of the Private Subnet here
+  PublicSubnetB: # Required because ALB requires two public subnets
+    Type: String
+    Default: Id of PublicSubnet
+    Description: A second public subnet name for the Application Load Balancer
   RouteTable:
     Type: String
     Default: Id of Route Table
@@ -26,18 +30,18 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: Load Balancer for Fargate
+          Value: Load Balancer for Fargate Application
       GroupDescription: Allows all traffic too and from Load Balancer
       VpcId: !Ref SelectedVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: "0.0.0.0/0" # Cidr block of VPC
+          CidrIp: "0.0.0.0/0" # Cidr entire internet
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: "0.0.0.0/0" #Cidr block of VPC
+          CidrIp: "0.0.0.0/0" #Cidr entire internet
       SecurityGroupEgress:
            - IpProtocol: "-1"
              CidrIp: "0.0.0.0/0"
@@ -84,6 +88,10 @@ Resources:
       LaunchType: FARGATE
       DesiredCount: 1
       TaskDefinition: !Ref FargateAuthTask
+      LoadBalancers:
+          - ContainerName: FargateAuthService
+            ContainerPort: 80
+            TargetGroupArn: AuthTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
               SecurityGroups:
@@ -99,6 +107,10 @@ Resources:
       LaunchType: FARGATE
       DesiredCount: 1
       TaskDefinition: !Ref FargateReflectTask
+      LoadBalancers:
+          - ContainerName: FargateReflectService
+            ContainerPort: 80
+            TargetGroupArn: ReflectTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
               SecurityGroups:
@@ -143,7 +155,7 @@ Resources:
         PidMode: task
         ContainerDefinitions:
          - Image: docker.io/gonzaga626/reflect:latest
-           Name: TestAuth
+           Name: ReflectTask
            Environment:
             - Name: API_PORT
               Value: 80
@@ -153,3 +165,28 @@ Resources:
             - AppProtocol: http
               ContainerPort: 80
               HostPort: 80
+
+  AuthTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      TargetType: ip
+      VpcId: !Ref SelectedVPC
+      Protocol: HTTP
+      Port: 80
+  ReflectTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      TargetType: ip
+      VpcId: !Ref SelectedVPC
+      Protocol: HTTP
+      Port: 80
+  
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+           - !Ref PublicSubnetA
+           - !Ref PublicSubnetB
+      Name: Fargate-LoadBlalancer
+      SecurityGroups:
+           - LoadSecurityGroup
