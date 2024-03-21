@@ -17,25 +17,29 @@ Parameters:
     Type: String
     Default: Id of VPC goes here
     Description: The VPC to be deployed to. Will have security groups added to it.
+
 Resources:
   # Subnets for the Default VPC
   LoadSecurityGroup:
     DeletionPolicy: Delete
     Type: AWS::EC2::SecurityGroup
     Properties:
+      Tags:
+        - Key: Name
+          Value: Load Balancer for Fargate
       GroupDescription: Allows all traffic too and from Load Balancer
       VpcId: !Ref SelectedVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: "0.0.0.0/0"
+          CidrIp: "0.0.0.0/0" # Cidr block of VPC
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: "0.0.0.0/0"
+          CidrIp: "0.0.0.0/0" #Cidr block of VPC
       SecurityGroupEgress:
-           - IpProtocol: TCP
+           - IpProtocol: "-1"
              CidrIp: "0.0.0.0/0"
              FromPort: 0
              ToPort: 1023
@@ -43,22 +47,29 @@ Resources:
     DeletionPolicy: Delete
     Type: AWS::EC2::SecurityGroup
     Properties:
+      Tags:
+        - Key: Name
+          Value: Controls traffic to and From Fargate instances
       GroupDescription: Allows Traffic from Public Subnet. Allows all outbound traffic
       VpcId: !Ref SelectedVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !Ref LoadSecurityGroup
+          CidrIp: "172.31.0.0/16" # VPC CIDR
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          SourceSecurityGroupId: !Ref LoadSecurityGroup
+          CidrIp: "172.31.0.0/16" # VPC CIDR
       SecurityGroupEgress:
            - IpProtocol: TCP
              DestinationSecurityGroupId: !Ref LoadSecurityGroup
              FromPort: 0
              ToPort: 1023
+           - IpProtocol: "-1"
+             CidrIp: "0.0.0.0/0" # Allows access to the internet
+             FromPort: 0
+             ToPort: 1024
   FargateCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -107,7 +118,7 @@ Resources:
         Cpu: 256
         PidMode: task
         ContainerDefinitions:
-         - Image: hub.docker.com/repository/docker/gonzaga626/auth:latest
+         - Image: docker.io/gonzaga626/auth:latest
            Name: TestAuth
            Environment:
             - Name: API_PORT
@@ -131,7 +142,7 @@ Resources:
         Cpu: 256
         PidMode: task
         ContainerDefinitions:
-         - Image: hub.docker.com/repository/docker/gonzaga626/reflect:latest
+         - Image: docker.io/gonzaga626/reflect:latest
            Name: TestAuth
            Environment:
             - Name: API_PORT
