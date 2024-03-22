@@ -173,7 +173,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckEnabled: true
-      HealthCheckPath: /health/
+      HealthCheckPath: /health
       HealthCheckPort: traffic-port
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 15 # if no responce in 15 seconds, target is in a bad state
@@ -188,7 +188,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckEnabled: true
-      HealthCheckPath: /health/
+      HealthCheckPath: /health
       HealthCheckPort: traffic-port
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 15 # if no responce in 15 seconds, target is in a bad state
@@ -247,3 +247,8 @@ Resources:
               PathPatternConfig:
                 Values:
                   - "api/*"
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['', [/ecs/, Fargate-simple]]
