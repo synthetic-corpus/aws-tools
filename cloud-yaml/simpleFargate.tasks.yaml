@@ -167,6 +167,7 @@ Resources:
               HostPort: 80
 
   AuthTargetGroup:
+    # DependsOn: !Ref AuthListenerRule
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
@@ -174,6 +175,7 @@ Resources:
       Protocol: HTTP
       Port: 80
   ReflectTargetGroup:
+    # DependsOn: !Ref ReflectListenerRule
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
@@ -184,9 +186,48 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
+      Scheme: internet-facing
       Subnets:
            - !Ref PublicSubnetA
            - !Ref PublicSubnetB
       Name: Fargate-LoadBlalancer
       SecurityGroups:
            - !Ref LoadSecurityGroup
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      DefaultActions:
+           - Type: fixed-response
+             FixedResponseConfig:
+                  StatusCode: 403
+                  ContentType: text/plain
+                  MessageBody: Why you break my load balancer?
+  AuthListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+         ListenerArn: !Ref ALBListener
+         Actions:
+            - Type: forward
+              TargetGroupArn: !Ref AuthTargetGroup
+         Priority: 100
+         Conditions:
+            - Field: path-pattern
+              PathPatternConfig:
+                Values:
+                  - "auth/*"
+  ReflectListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+         ListenerArn: !Ref ALBListener
+         Actions:
+            - Type: forward
+              TargetGroupArn: !Ref ReflectTargetGroup
+         Priority: 200
+         Conditions:
+            - Field: path-pattern
+              PathPatternConfig:
+                Values:
+                  - "api/*"
