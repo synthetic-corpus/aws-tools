@@ -82,6 +82,7 @@ Resources:
            - FARGATE
   FargateAuthService:
     Type: AWS::ECS::Service
+    DependsOn: ALBListener
     Properties:
       ServiceName: Fargate-Auth-Service
       Cluster: !Ref FargateCluster
@@ -101,6 +102,7 @@ Resources:
                 
   FargateReflectService:
     Type: AWS::ECS::Service
+    DependsOn: ALBListener
     Properties:
       ServiceName: Fargate-Reflect-Service
       Cluster: !Ref FargateCluster
@@ -170,6 +172,13 @@ Resources:
     # DependsOn: !Ref AuthListenerRule
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      HealthCheckEnabled: true
+      HealthCheckPath: /health/
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 15 # if no responce in 15 seconds, target is in a bad state
+      HealthyThresholdCount: 2 # must succeed twice to be healthy
+      UnhealthyThresholdCount: 3 #if fail three times is considered bad
       TargetType: ip
       VpcId: !Ref SelectedVPC
       Protocol: HTTP
@@ -178,6 +187,13 @@ Resources:
     # DependsOn: !Ref ReflectListenerRule
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      HealthCheckEnabled: true
+      HealthCheckPath: /health/
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 15 # if no responce in 15 seconds, target is in a bad state
+      HealthyThresholdCount: 2 # must succeed twice to be healthy
+      UnhealthyThresholdCount: 3 #if fail three times is considered bad
       TargetType: ip
       VpcId: !Ref SelectedVPC
       Protocol: HTTP
