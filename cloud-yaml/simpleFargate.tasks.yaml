@@ -60,20 +60,16 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: "172.31.0.0/16" # VPC CIDR
+          CidrIp: "0.0.0.0/0" # All of the internet because now tasks are in a public subnet
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: "172.31.0.0/16" # VPC CIDR
+          CidrIp: "0.0.0.0/0" # all the internet because tasks now in a public subnet
       SecurityGroupEgress:
-           - IpProtocol: TCP
-             DestinationSecurityGroupId: !Ref LoadSecurityGroup
-             FromPort: 0
-             ToPort: 1023
-           - IpProtocol: "-1"
-             CidrIp: "0.0.0.0/0" # Allows access to the internet
-             FromPort: 0
-             ToPort: 1024
+        - IpProtocol: "-1"
+          CidrIp: "0.0.0.0/0" # Allows access to the internet
+          FromPort: 0
+          ToPort: 1024
   FargateCluster:
     Type: AWS::ECS::Cluster
     Properties:
