@@ -98,7 +98,8 @@ Resources:
               SecurityGroups:
                    - !Ref FargateSecurityGroup
               Subnets:
-                   - !Ref PrivateSubnet
+                   - !Ref PublicSubnetA
+                   - !Ref PublicSubnetB
                 
   FargateReflectService:
     Type: AWS::ECS::Service
@@ -118,7 +119,8 @@ Resources:
               SecurityGroups:
                    - !Ref FargateSecurityGroup
               Subnets:
-                   - !Ref PrivateSubnet
+                   - !Ref PublicSubnetA
+                   - !Ref PublicSubnetB
   FargateAuthTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
