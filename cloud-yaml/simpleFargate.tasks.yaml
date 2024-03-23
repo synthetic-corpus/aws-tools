@@ -78,7 +78,9 @@ Resources:
            - FARGATE
   FargateAuthService:
     Type: AWS::ECS::Service
-    DependsOn: ALBListener
+    DependsOn: 
+      - ALBListener
+      - AuthListenerRule
     Properties:
       ServiceName: Fargate-Auth-Service
       Cluster: !Ref FargateCluster
@@ -91,6 +93,7 @@ Resources:
             TargetGroupArn: !Ref AuthTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
+              AssignPublicIp: ENABLED
               SecurityGroups:
                    - !Ref FargateSecurityGroup
               Subnets:
@@ -99,7 +102,9 @@ Resources:
                 
   FargateReflectService:
     Type: AWS::ECS::Service
-    DependsOn: ALBListener
+    DependsOn: 
+      - ALBListener
+      - ReflectListenerRule
     Properties:
       ServiceName: Fargate-Reflect-Service
       Cluster: !Ref FargateCluster
@@ -112,6 +117,7 @@ Resources:
             TargetGroupArn: !Ref ReflectTargetGroup
       NetworkConfiguration:
            AwsvpcConfiguration:
+              AssignPublicIp: ENABLED
               SecurityGroups:
                    - !Ref FargateSecurityGroup
               Subnets:
