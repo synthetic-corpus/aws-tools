@@ -5,22 +5,21 @@ Parameters:
     Type: String
     Default: Id of Public Subnet
     Description: Enter the Public Subnet here
-  PrivateSubnet:
-    Type: String
-    Default: Iof the private Subnet
-    Description: enter the id of the Private Subnet here
   PublicSubnetB: # Required because ALB requires two public subnets
     Type: String
     Default: Id of PublicSubnet
     Description: A second public subnet name for the Application Load Balancer
-  RouteTable:
-    Type: String
-    Default: Id of Route Table
-    Description: The Route Table that routes may need to be added to.
   SelectedVPC:
     Type: String
     Default: Id of VPC goes here
     Description: The VPC to be deployed to. Will have security groups added to it.
+  # Examples of Private variables to be injected into the stack. Most likely references to SSM
+  PrivateVariableA:
+    Type: String
+    Default: Place the reference to the secret key here
+    Description: This is a reference to a secret key store in ssm
+  # Should we prefer to get Variables via task role, that task role can be specified here
+
 
 Resources:
   # Subnets for the Default VPC
@@ -147,9 +146,68 @@ Resources:
             - AppProtocol: http
               ContainerPort: 80
               HostPort: 80
+  ReflectTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+
+         AssumeRolePolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Principal:
+                    Service: ecs-tasks.amazonaws.com
+                  Action: 'sts:AssumeRole'
+         Policies:
+            - PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      - 'kms:Decrypt'
+                    Resource: "arn:aws:kms:us-west-2::key/*" # could be further refined to specific keys.
+                  - Effect: Allow
+                    Action: 
+                      - 'ssm:GetParameter'
+                      - 'ssm:GetParameters'
+                      - 'ssm:DescribeParameters'
+                    Resource: "arn:aws:ssm:us-west-2::parameter/*" # Later, this can be made more granular with parameters.
+              PolicyName: Fargate-read-params-policy-task
+  
+  ContainerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: Write_to_cloud_logs
+      AssumeRolePolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Principal:
+                    Service: ecs-tasks.amazonaws.com
+                  Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyDocument:
+            Version: "2012-10-17" 
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                Resource: !GetAtt LogGroup.Arn
+          PolicyName: CloudLogger
+        - PolicyDocument:
+                Statement:
+                  - Effect: Allow
+                    Action: 
+                      - 'ssm:GetParamters'
+                    Resource: "*" # Later, this can be made more granular with parameters.
+          PolicyName: Fargate-read-params-container
+
+
+
+
   FargateReflectTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
+        TaskRoleArn: !Ref ReflectTaskRole
+        ExecutionRoleArn: !GetAtt ContainerRole.Arn # not sure why, but !Ref does not work here
         Tags:
           - Key: test
             Value: True
@@ -162,11 +220,21 @@ Resources:
         ContainerDefinitions:
          - Image: docker.io/gonzaga626/reflect:latest
            Name: ReflectTask
+           LogConfiguration:
+                LogDriver: awslogs
+                Options:
+                  awslogs-region: 'us-west-2'
+                  awslogs-group: !Ref LogGroup
+                  awslogs-stream-prefix: simple-fargate
            Environment:
             - Name: API_PORT
               Value: 80
             - Name: TEST_VAR
               Value: Test variable successfully added.
+            - Name: PRIVATE_VAR_A
+              Value: !Ref PrivateVariableA
+            - Name: PRIVATE_VAR_B
+              Value: '{{resolve:ssm:mongo_url}}'
            PortMappings:
             - AppProtocol: http
               ContainerPort: 80
@@ -255,4 +323,4 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', [/ecs/, Fargate-simple]]
+      LogGroupName: Simple-fargate-logs

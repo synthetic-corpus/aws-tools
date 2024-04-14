@@ -1,18 +1,22 @@
 [
     {
-        "ParameterKey": "PublicSubnet",
+        "ParameterKey": "PublicSubnetA",
         "ParameterValue": "hello subnet"
     },
     {
-        "ParameterKey": "PrivateSubnet",
+        "ParameterKey": "PublicSubnetB",
         "ParameterValue": "hello subnet"
     },
     {
         "ParameterKey": "RouteTable", 
-        "ParamterValue": "hello routetable"
+        "ParameterValue": "hello routetable"
     },
     {
         "ParameterKey": "SelectedVPC", 
-        "ParamterValue": "hello VPC"
+        "ParameterValue": "hello VPC"
+    },
+    {
+        "ParameterKey": "PrivateValueA",
+        "ParameterValue": "This is a of private Value A"
     }
 ]
