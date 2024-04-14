@@ -18,5 +18,9 @@
     {
         "ParameterKey": "PrivateValueA",
         "ParameterValue": "This is a of private Value A"
+    },
+    {
+        "ParameterKey": "ssmPath",
+        "ParameterValue": "arn:aws:ssm:us-west-2:9xxxxxxxx:parameter/*"
     }
 ]

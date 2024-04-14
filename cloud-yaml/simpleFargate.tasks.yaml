@@ -18,6 +18,14 @@ Parameters:
     Type: String
     Default: Place the reference to the secret key here
     Description: This is a reference to a secret key store in ssm
+  SSMpath:
+    Type: String
+    Default: place the path to your parameter's SSM here
+    Description: This is for SSM path
+  KMSkey:
+    Type: String
+    Default: This should be the ARN of the key used to decrypt secure strings
+    Description: This is another ARN path
   # Should we prefer to get Variables via task role, that task role can be specified here
 
 
@@ -163,13 +171,13 @@ Resources:
                   - Effect: Allow
                     Action:
                       - 'kms:Decrypt'
-                    Resource: "arn:aws:kms:us-west-2::key/*" # could be further refined to specific keys.
+                    Resource: !Ref KMSkey # could be further refined to specific keys.
                   - Effect: Allow
                     Action: 
                       - 'ssm:GetParameter'
                       - 'ssm:GetParameters'
                       - 'ssm:DescribeParameters'
-                    Resource: "arn:aws:ssm:us-west-2::parameter/*" # Later, this can be made more granular with parameters.
+                    Resource: !Ref SSMpath # Later, this can be made more granular with parameters.
               PolicyName: Fargate-read-params-policy-task
   
   ContainerRole:
