@@ -17,12 +17,12 @@ paths:
           Fn::GetAtt: [RestApiRole, Arn]
         httpMethod: "ANY"
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:states:action/StartSyncExecution
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:states:action/StartExecution
         responses:
           "200":
             statusCode: "200"
             responseTemplates:
-              application/json: "{\"output\":$input.json('$.output')}"
+              application/json: "$input.json('$')}"
           "400":
             statusCode: "400"
         requestTemplates:

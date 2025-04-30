@@ -1,4 +1,5 @@
 {
+    "QueryLanguage": "JSONata",
     "StartAt": "Step1",
     "States": {
       "Step1": {
@@ -14,6 +15,10 @@
       "Step3": {
         "Type": "Task",
         "Resource": "${Lambda3Arn}",
+        "Next": "ReturnOutput"
+      },
+      "ReturnOutput": {
+        "Type": "Pass",
         "End": true
       }
     }
