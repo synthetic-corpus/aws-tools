@@ -13,8 +13,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.9
-      Handler: lambda1.lambda_handler
-      CodeUri: ./src/StepfunctionLambda1
+      Handler: handler.lambda_handler
+      CodeUri: ./src/StepFunctionLambda1
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
@@ -23,8 +23,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.9
-      Handler: lambda2.lambda_handler
-      CodeUri: ./src/StepfunctionLambda2
+      Handler: handler.lambda_handler
+      CodeUri: ./src/StepFunctionLambda2
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
@@ -33,11 +33,42 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.9
-      Handler: lambda3.lambda_handler
-      CodeUri: ./src/StepfunctionLambda3
+      Handler: handler.lambda_handler
+      CodeUri: ./src/StepFunctionLambda3
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
+
+  HelloWorldApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: 'api.yaml'
+
+  RestApiRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                - apigateway.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Policies:
+        - PolicyName: AllowSFNExec
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: "states:StartSyncExecution"
+                Resource: !GetAtt MyStateMachine.Arn
 
   StepFunctionExecutionRole:
       Type: AWS::IAM::Role
@@ -72,3 +103,14 @@ Resources:
         Lambda1Arn: !GetAtt StepFunctionLambda1.Arn
         Lambda2Arn: !GetAtt StepFunctionLambda2.Arn
         Lambda3Arn: !GetAtt StepFunctionLambda3.Arn
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL to call Hello World State Machine"
+    Value: !Sub "https://${HelloWorldApi}.execute-api.${AWS::Region}.amazonaws.com/dev/"
+  HelloWorldStateMachineArn:
+    Description: "Hello World State Machine ARN"
+    Value: !Ref MyStateMachine
+  HelloWorldStateMachineRole:
+    Description: "IAM Role created for Hello World State Machine based on the specified SAM Policy Templates"
+    Value: !GetAtt StepFunctionExecutionRole.Arn
