@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Test Step Functions and Lambda locally
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Deployment environment (e.g., dev, staging, prod)
+Resources:
+  StepFunctionLambda1:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda1.lambda_handler
+      CodeUri: StepFunctionLambda1
+      Environment:
+        Variables:
+          ENVIRONMENT:
+            Ref: Environment
+    Metadata:
+      SamResourceId: StepFunctionLambda1
+  StepFunctionLambda2:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda2.lambda_handler
+      CodeUri: StepFunctionLambda2
+      Environment:
+        Variables:
+          ENVIRONMENT:
+            Ref: Environment
+    Metadata:
+      SamResourceId: StepFunctionLambda2
+  StepFunctionLambda3:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda3.lambda_handler
+      CodeUri: StepFunctionLambda3
+      Environment:
+        Variables:
+          ENVIRONMENT:
+            Ref: Environment
+    Metadata:
+      SamResourceId: StepFunctionLambda3
+  MyStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: ../../statemachine-asl.json
+      Role: arn:aws:iam::000000000000:role/DummyRole
+      DefinitionSubstitutions:
+        Lambda1Arn:
+          Fn::GetAtt:
+          - StepFunctionLambda1
+          - Arn
+        Lambda2Arn:
+          Fn::GetAtt:
+          - StepFunctionLambda2
+          - Arn
+        Lambda3Arn:
+          Fn::GetAtt:
+          - StepFunctionLambda3
+          - Arn

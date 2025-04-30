@@ -1,0 +1,11 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "simple-steps2"
+resolve_s3 = true
+s3_prefix = "simple-steps2"
+region = "us-west-2"
+profile = "deployguy"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"dev\""
+image_repositories = []

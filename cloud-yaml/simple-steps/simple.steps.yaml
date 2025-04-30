@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Test Step Functions and Lambda locally
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Deployment environment (e.g., dev, staging, prod)
+
+Resources:
+  StepFunctionLambda1:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda1.lambda_handler
+      CodeUri: ./src/StepfunctionLambda1
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+
+  StepFunctionLambda2:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda2.lambda_handler
+      CodeUri: ./src/StepfunctionLambda2
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+
+  StepFunctionLambda3:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda3.lambda_handler
+      CodeUri: ./src/StepfunctionLambda3
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+
+  StepFunctionExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - states.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: StepFunctionLambdaInvoke
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - lambda:InvokeFunction
+                  Resource:
+                    - !GetAtt StepFunctionLambda1.Arn
+                    - !GetAtt StepFunctionLambda2.Arn
+                    - !GetAtt StepFunctionLambda3.Arn
+  
+  MyStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine-asl.json
+      Role: !GetAtt StepFunctionExecutionRole.Arn
+      DefinitionSubstitutions:
+        Lambda1Arn: !GetAtt StepFunctionLambda1.Arn
+        Lambda2Arn: !GetAtt StepFunctionLambda2.Arn
+        Lambda3Arn: !GetAtt StepFunctionLambda3.Arn

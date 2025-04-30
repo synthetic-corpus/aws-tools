@@ -1,0 +1,20 @@
+{
+    "StartAt": "Step1",
+    "States": {
+      "Step1": {
+        "Type": "Task",
+        "Resource": "${Lambda1Arn}",
+        "Next": "Step2"
+      },
+      "Step2": {
+        "Type": "Task",
+        "Resource": "${Lambda2Arn}",
+        "Next": "Step3"
+      },
+      "Step3": {
+        "Type": "Task",
+        "Resource": "${Lambda3Arn}",
+        "End": true
+      }
+    }
+  }
